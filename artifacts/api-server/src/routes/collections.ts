@@ -98,7 +98,7 @@ const account: AccountRecord = {
 };
 
 const FIRST_MESSAGE =
-  "Hello, this is Maya calling from Kapture Finance. Am I speaking with Mr. Rahul Sharma?";
+  "Hello, this is Maya calling from Kapture Finance. May I speak with the person I'm trying to reach?";
 const VOICE_REFERENCE =
   "/approved-voice/voice_preview_clara_-_warm,_professional_and_helpful_1786503064411.mp3";
 
@@ -496,12 +496,12 @@ export function executeTool(
   rawArgs: unknown,
 ): Record<string, unknown> {
   const args = parseToolArguments(rawArgs);
-  switch (toolName) {
-    case "verify_customer":
-  return verifyCustomer(
-    args.account_id ?? account.accountId,
-    args.verification_code,
-  );
+ switch (toolName) {
+  case "verify_customer":
+    return verifyCustomer(
+      account.accountId,
+      args.verification_code,
+    );
     case "log_promise_to_pay":
       return logPromiseToPay(args);
     case "send_payment_link":
@@ -521,14 +521,14 @@ function runDemoAction(action: DemoAction) {
     case "VERIFY":
       executeTool("verify_customer", {
         account_id: account.accountId,
-        verification_code: "1234",
+        verification_code: "2913",
       });
       break;
     case "SUCCESSFUL_PTP":
       if (!isAuthenticated()) {
         executeTool("verify_customer", {
           account_id: account.accountId,
-          verification_code: "1234",
+          verification_code: "2913",
         });
       }
       executeTool("log_promise_to_pay", {
@@ -550,7 +550,7 @@ function runDemoAction(action: DemoAction) {
       if (!isAuthenticated()) {
         executeTool("verify_customer", {
           account_id: account.accountId,
-          verification_code: "1234",
+          verification_code: "2913",
         });
       }
       executeTool("mark_disposition", {
@@ -563,7 +563,7 @@ function runDemoAction(action: DemoAction) {
       if (!isAuthenticated()) {
         executeTool("verify_customer", {
           account_id: account.accountId,
-          verification_code: "1234",
+          verification_code: "2913",
         });
       }
       executeTool("escalate_to_agent", {
@@ -587,7 +587,7 @@ function runDemoAction(action: DemoAction) {
       if (!isAuthenticated()) {
         executeTool("verify_customer", {
           account_id: account.accountId,
-          verification_code: "1234",
+          verification_code: "2913",
         });
       }
       executeTool("escalate_to_agent", {
