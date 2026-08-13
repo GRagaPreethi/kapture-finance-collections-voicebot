@@ -355,14 +355,62 @@ function logPromiseToPay(args: Record<string, unknown>) {
     return { success: false, message: "Customer authentication is required." };
   }
 
-  const date = typeof args.ptp_date === "string" ? args.ptp_date : "";
-  const amount = typeof args.amount === "number" ? args.amount : Number(args.amount);
+  const date =
+    typeof args.ptp_date === "string" ? args.ptp_date.trim() : "";
+
+  const amount =
+    typeof args.amount === "number"
+      ? args.amount
+      : Number(args.amount);
+
   if (!date || !Number.isFinite(amount) || amount <= 0) {
-    recordTool("log_promise_to_pay", false, "Missing or invalid PTP details.");
-    return { success: false, message: "A valid date and amount are required." };
+    recordTool(
+      "log_promise_to_pay",
+      false,
+      "Missing or invalid PTP details.",
+    );
+
+    return {
+      success: false,
+      message: "A valid payment date and amount are required.",
+    };
+  }
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    recordTool(
+      "log_promise_to_pay",
+      false,
+      "Invalid PTP date.",
+    );
+
+    return {
+      success: false,
+      message: "The payment date is invalid.",
+    };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  parsedDate.setHours(0, 0, 0, 0);
+
+  if (parsedDate < today) {
+    recordTool(
+      "log_promise_to_pay",
+      false,
+      "PTP date is in the past.",
+    );
+
+    return {
+      success: false,
+      message: "The payment date must be today or a future date.",
+    };
   }
 
   session.currentState = "NEGOTIATION";
+
   const ptp = {
     id: nextId("PTP"),
     accountId: account.accountId,
@@ -371,9 +419,16 @@ function logPromiseToPay(args: Record<string, unknown>) {
     paymentLinkSent: false,
     createdAt: now(),
   };
+
   session.ptpRecords.push(ptp);
+
   session.currentState = "ACTION";
-  recordTool("log_promise_to_pay", true, `PTP recorded for ${date}.`);
+
+  recordTool(
+    "log_promise_to_pay",
+    true,
+    `PTP recorded for ${date}.`,
+  );
 
   return {
     success: true,
@@ -395,10 +450,16 @@ function sendPaymentLink(args: Record<string, unknown>) {
     return { success: false, message: "Channel must be SMS, WhatsApp, or BOTH." };
   }
 
-  const latestPtp = session.ptpRecords.at(-1);
-  if (latestPtp) latestPtp.paymentLinkSent = true;
-  recordTool("send_payment_link", true, `Payment link prepared for ${channel}.`);
-  return { success: true, message: "Payment link sent successfully." };
+  recordTool(
+  "send_payment_link",
+  true,
+  `Payment link action completed via ${channel}.`,
+);
+
+return {
+  success: true,
+  message: `Payment link action completed successfully via ${channel}.`,
+};
 }
 
 function escalateToAgent(args: Record<string, unknown>) {
