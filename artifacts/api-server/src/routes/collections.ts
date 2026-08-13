@@ -492,7 +492,10 @@ export function executeTool(
   const args = parseToolArguments(rawArgs);
   switch (toolName) {
     case "verify_customer":
-      return verifyCustomer(args.account_id, args.verification_code);
+  return verifyCustomer(
+    args.account_id ?? account.accountId,
+    args.verification_code,
+  );
     case "log_promise_to_pay":
       return logPromiseToPay(args);
     case "send_payment_link":
