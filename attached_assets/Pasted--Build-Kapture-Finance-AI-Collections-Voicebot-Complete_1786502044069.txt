@@ -1,0 +1,1168 @@
+# Build Kapture Finance AI Collections Voicebot — Complete Take-Home Assignment
+
+You are an expert full-stack engineer and AI voice-agent engineer.
+
+I need you to build a complete take-home assignment project for an **AI Delivery Intern role at Kapture**.
+
+The project is an outbound AI voice collections agent called **Maya** for a fictional lending company called **Kapture Finance**.
+
+The uploaded assignment/reference document is the primary source of truth. Follow its requirements, terminology, flow, and constraints carefully.
+
+Do NOT build an over-engineered production system. This is a 1-day take-home assignment. Prioritize:
+
+* Working functionality
+* Clear architecture
+* Strong state enforcement
+* Safe authentication
+* Correct tool calling
+* Good edge-case handling
+* Easy local testing
+* Clean documentation
+
+---
+
+# 1. PROJECT GOAL
+
+Build a working demo application for a collections voicebot.
+
+Example customer context:
+
+* Customer: Rahul Sharma
+* Account ID: ACC-88392
+* Loan type: Personal Loan
+* Overdue EMI: ₹8,499
+* Days past due: 12
+
+The AI agent is:
+
+* Name: Maya
+* Company: Kapture Finance
+* Role: Polite collections specialist
+
+The agent should:
+
+1. Greet the customer.
+2. Confirm whether it is Rahul Sharma.
+3. Authenticate the customer.
+4. NEVER reveal debt information before successful authentication.
+5. After authentication, disclose the overdue information.
+6. Identify customer intent.
+7. Handle:
+
+   * Promise to Pay
+   * Already Paid
+   * Financial Hardship / Cannot Pay
+   * Dispute
+   * Wrong Person
+   * Do Not Call
+   * Callback Request
+   * Hostile/Abusive caller
+8. Call appropriate backend tools.
+9. Log a final disposition.
+10. End the call politely.
+
+---
+
+# 2. IMPORTANT SECURITY RULE
+
+This is the most important requirement.
+
+Authentication MUST be state-enforced.
+
+The bot must NOT rely only on the system prompt to prevent disclosure.
+
+Implement an explicit conversation state:
+
+INIT
+AUTH_PENDING
+AUTHENTICATED
+NEGOTIATION
+ACTION
+ESCALATED
+CALL_ENDED
+
+The application must track the current state.
+
+Debt information such as:
+
+* overdue
+* EMI
+* loan
+* amount
+* ₹8,499
+* 12 days overdue
+* debt information
+
+MUST NOT be exposed while the state is AUTH_PENDING.
+
+The transition:
+
+AUTH_PENDING → AUTHENTICATED
+
+is allowed ONLY when:
+
+verify_customer()
+
+returns:
+
+{
+"verified": true
+}
+
+If verification fails:
+
+* remain in AUTH_PENDING
+* allow limited retry
+* never disclose debt
+* after repeated failures, end/escalate appropriately
+
+Do NOT allow the LLM to manually decide that authentication succeeded.
+
+The backend/tool result is authoritative.
+
+---
+
+# 3. TECHNOLOGY STACK
+
+Use:
+
+Frontend:
+
+* React
+* Vite
+* simple clean dashboard UI
+
+Backend:
+
+* Node.js
+* Express.js
+
+AI/Voice integration:
+
+* Vapi-compatible assistant configuration
+* OpenAI GPT-4o or GPT-4o-mini
+* Deepgram Nova-2
+* ElevenLabs or Cartesia TTS
+
+For the take-home demo, the backend should provide mock webhook APIs that can be connected to Vapi.
+
+Use environment variables where appropriate.
+
+Do not expose API keys in frontend code.
+
+---
+
+# 4. REQUIRED PROJECT STRUCTURE
+
+Create:
+
+kapture-collections-voicebot/
+
+├── README.md
+
+├── docs/
+│   ├── HLD_Document.md
+│   └── architecture.mmd
+
+├── vapi/
+│   ├── system_prompt.txt
+│   └── tool_definitions.json
+
+├── mock-server/
+│   ├── package.json
+│   ├── server.js
+│   └── .env.example
+
+├── tests/
+│   └── test_cases.json
+
+├── src/
+│   ├── components/
+│   ├── App.jsx
+│   └── main.jsx
+
+├── package.json
+
+└── .gitignore
+
+The project should run without unnecessary dependencies.
+
+---
+
+# 5. MOCK DATABASE
+
+Create an in-memory mock database in the Express backend.
+
+Example:
+
+{
+"ACC-88392": {
+"customer_name": "Rahul Sharma",
+"loan_type": "Personal Loan",
+"overdue_amount": 8499,
+"days_past_due": 12,
+"verification_codes": ["1234", "1995"],
+"phone": "+91XXXXXXXXXX"
+}
+}
+
+The mock verification should succeed for:
+
+1234
+
+or
+
+1995
+
+and fail for other values.
+
+Do NOT expose verification codes through the frontend.
+
+---
+
+# 6. REQUIRED API / TOOLS
+
+Implement at least these tools:
+
+## verify_customer
+
+Input:
+
+{
+"account_id": "ACC-88392",
+"verification_code": "1234"
+}
+
+Output on success:
+
+{
+"verified": true,
+"customer_name": "Rahul Sharma",
+"message": "Identity verified successfully."
+}
+
+Output on failure:
+
+{
+"verified": false,
+"message": "Verification failed."
+}
+
+This tool MUST be the authority for authentication.
+
+---
+
+## log_promise_to_pay
+
+Input:
+
+{
+"account_id": "ACC-88392",
+"ptp_date": "2026-08-14",
+"amount": 8499
+}
+
+Output:
+
+{
+"success": true,
+"ptp_id": "PTP-1234",
+"confirmed_date": "2026-08-14",
+"amount": 8499
+}
+
+---
+
+## send_payment_link
+
+Input:
+
+{
+"account_id": "ACC-88392",
+"channel": "SMS"
+}
+
+Allowed channels:
+
+* SMS
+* WhatsApp
+* BOTH
+
+Output:
+
+{
+"success": true,
+"message": "Payment link sent successfully."
+}
+
+---
+
+## escalate_to_agent
+
+Input:
+
+{
+"account_id": "ACC-88392",
+"reason": "DISPUTE"
+}
+
+Allowed reasons:
+
+* DISPUTE
+* HARDSHIP_REQUEST
+* CALLBACK_REQUEST
+* HOSTILE_CALLER
+* VERIFICATION_FAILURE
+
+Output:
+
+{
+"success": true,
+"queue": "collections_resolution",
+"message": "Customer has been routed to a human agent."
+}
+
+---
+
+## mark_disposition
+
+Input:
+
+{
+"account_id": "ACC-88392",
+"status": "PTP_AGREED",
+"notes": "Customer agreed to pay ₹8499 on 2026-08-14"
+}
+
+Allowed statuses:
+
+* PTP_AGREED
+* ALREADY_PAID
+* DISPUTED
+* HARDSHIP_ESCALATED
+* WRONG_PERSON
+* DO_NOT_CALL
+* CALLBACK_REQUEST
+* VERIFICATION_FAILED
+* NO_RESPONSE
+* HOSTILE_CALLER
+
+Output:
+
+{
+"success": true,
+"disposition_logged": true
+}
+
+---
+
+# 7. WEBHOOK
+
+Create:
+
+POST /webhook
+
+It must accept Vapi-style tool calls.
+
+Expected structure should support:
+
+message.type === "tool-calls"
+
+Return:
+
+{
+"results": [
+{
+"toolCallId": "...",
+"result": "..."
+}
+]
+}
+
+Also create useful development endpoints:
+
+GET /health
+
+GET /api/account/:accountId
+
+GET /api/dispositions
+
+GET /api/ptp
+
+These are for debugging/demo purposes.
+
+---
+
+# 8. STATE MACHINE
+
+Implement the following state machine:
+
+INIT
+↓
+AUTH_PENDING
+↓
+verify_customer
+↓
+AUTHENTICATED
+↓
+NEGOTIATION
+↓
+ACTION
+↓
+CALL_ENDED
+
+Alternative routes:
+
+AUTH_PENDING
+→ VERIFICATION_FAILED
+→ CALL_ENDED
+
+AUTHENTICATED
+→ DISPUTE
+→ ESCALATED
+→ CALL_ENDED
+
+AUTHENTICATED
+→ HARDSHIP
+→ ESCALATED
+→ CALL_ENDED
+
+AUTHENTICATED
+→ ALREADY_PAID
+→ CALL_ENDED
+
+AUTHENTICATED
+→ DO_NOT_CALL
+→ CALL_ENDED
+
+AUTHENTICATED
+→ PTP
+→ ACTION
+→ CALL_ENDED
+
+Wrong person:
+
+AUTH_PENDING
+→ WRONG_PERSON
+→ CALL_ENDED
+
+Make the state transitions explicit in code/documentation.
+
+---
+
+# 9. SYSTEM PROMPT
+
+Create:
+
+vapi/system_prompt.txt
+
+Write a strong production-style Vapi system prompt.
+
+It must contain sections:
+
+# ROLE
+
+# CUSTOMER CONTEXT
+
+# STATE MACHINE
+
+# AUTHENTICATION RULES
+
+# ZERO-DEBT-DISCLOSURE RULE
+
+# CONVERSATION FLOW
+
+# INTENT HANDLING
+
+# TOOL USAGE
+
+# COMPLIANCE
+
+# EDGE CASES
+
+# LANGUAGE HANDLING
+
+# CLOSING
+
+The prompt should make Maya:
+
+* polite
+* calm
+* concise
+* professional
+* empathetic
+* non-threatening
+
+Maya must NEVER:
+
+* threaten the customer
+* shame the customer
+* harass the customer
+* invent fees
+* invent payment options
+* invent waivers
+* reveal debt before authentication
+* claim a tool succeeded when it failed
+* fabricate payment confirmation
+* argue with disputes
+
+---
+
+# 10. FIRST MESSAGE
+
+Use:
+
+"Hello, this is Maya calling from Kapture Finance. Am I speaking with Mr. Rahul Sharma?"
+
+Do not mention the overdue amount in the first message.
+
+---
+
+# 11. AUTHENTICATION FLOW
+
+After the customer confirms identity:
+
+"For security purposes, could you please confirm the last four digits of your PAN or your year of birth?"
+
+Then call:
+
+verify_customer()
+
+Do not proceed until the tool response is received.
+
+If:
+
+verified = true
+
+then transition to:
+
+AUTHENTICATED
+
+Only then may Maya disclose debt information.
+
+If:
+
+verified = false
+
+Maya must say the verification was unsuccessful and request another attempt.
+
+After reasonable failed attempts, log:
+
+VERIFICATION_FAILED
+
+and end/escalate.
+
+---
+
+# 12. POST-AUTH DISCLOSURE
+
+After successful verification:
+
+"Thank you for verifying, Rahul. I’m calling regarding your Kapture Finance personal loan. An EMI of ₹8,499 is currently overdue by 12 days."
+
+Then ask:
+
+"Would you be able to make the payment today, or is there another date that would work for you?"
+
+Do not make unsupported claims about penalties, legal action, credit scores, or consequences.
+
+---
+
+# 13. PROMISE-TO-PAY FLOW
+
+If customer says they will pay:
+
+Extract:
+
+* amount
+* date
+
+If date is relative, resolve it correctly.
+
+Example:
+
+"Friday"
+
+must be converted to the actual upcoming Friday based on the current date.
+
+Call:
+
+log_promise_to_pay()
+
+Then call:
+
+send_payment_link()
+
+Then call:
+
+mark_disposition(status="PTP_AGREED")
+
+Then politely close.
+
+---
+
+# 14. ALREADY PAID
+
+If customer says:
+
+"I already paid."
+
+Do NOT argue.
+
+Ask:
+
+"Thank you. Could you tell me when you made the payment and, if available, the payment reference or payment method?"
+
+Then:
+
+mark_disposition(ALREADY_PAID)
+
+Respond politely:
+
+"Thank you for letting me know. We’ll record that information for verification. If the payment is still processing, the account status may take some time to update."
+
+Do not guarantee a specific processing time unless supported by backend data.
+
+---
+
+# 15. DISPUTE
+
+If customer disputes the debt or amount:
+
+Do not argue.
+
+Say:
+
+"I understand that you’re disputing the amount. I’ll route this to our resolution team so it can be reviewed."
+
+Call:
+
+escalate_to_agent(reason="DISPUTE")
+
+Then:
+
+mark_disposition(status="DISPUTED")
+
+End politely.
+
+---
+
+# 16. FINANCIAL HARDSHIP
+
+If customer cannot pay:
+
+Show empathy.
+
+Do not invent discounts, waivers, or repayment plans.
+
+Ask for the reason if appropriate.
+
+Then:
+
+escalate_to_agent(reason="HARDSHIP_REQUEST")
+
+mark_disposition(HARDSHIP_ESCALATED)
+
+End politely.
+
+---
+
+# 17. DO NOT CALL
+
+If the customer says:
+
+"Stop calling me."
+
+"Don't call me again."
+
+"Put me on the do-not-call list."
+
+Immediately:
+
+mark_disposition(DO_NOT_CALL)
+
+Do not continue collections negotiation.
+
+Say:
+
+"Understood. I’ll record your request. Thank you for your time."
+
+End the call.
+
+---
+
+# 18. WRONG PERSON
+
+If someone says:
+
+"This is not Rahul."
+
+Do not reveal:
+
+* loan
+* EMI
+* overdue
+* amount
+* Kapture Finance debt details
+
+Ask whether Rahul is available.
+
+If not:
+
+mark_disposition(WRONG_PERSON)
+
+End politely.
+
+---
+
+# 19. HOSTILE CALLER
+
+If the customer becomes abusive:
+
+Remain calm.
+
+Give one polite warning.
+
+If hostility continues:
+
+escalate_to_agent(reason="HOSTILE_CALLER")
+
+mark_disposition(HOSTILE_CALLER)
+
+End the call.
+
+Never argue.
+
+---
+
+# 20. LANGUAGE SWITCHING
+
+Support English and Hindi/Hinglish as a bonus.
+
+If the user switches language:
+
+* maintain the same conversation state
+* maintain authentication state
+* preserve tool parameters
+* respond naturally in the detected language
+
+Do not restart authentication simply because language changed.
+
+---
+
+# 21. VAPI CONFIGURATION NOTES
+
+Create documentation explaining recommended configuration:
+
+Model:
+GPT-4o-mini or GPT-4o
+
+Temperature:
+0.1
+
+Transcriber:
+Deepgram Nova-2
+
+Voice:
+ElevenLabs or Cartesia professional female voice
+
+Explain why:
+
+* GPT-4o-mini: low latency and sufficient for structured conversational routing
+* Deepgram Nova-2: low-latency telephony transcription
+* ElevenLabs/Cartesia: natural TTS suitable for voice conversations
+* Low temperature: reduces unpredictable behaviour in compliance-sensitive flow
+
+Do not claim exact provider latency unless measured.
+
+---
+
+# 22. LATENCY BUDGET
+
+In HLD document include:
+
+Target total latency < 1.2 seconds.
+
+Example budget:
+
+STT: ~200ms
+LLM first byte: ~400ms
+TTS: ~300ms
+Network/overhead: ~200ms
+
+Total: ~1.1 seconds
+
+Clearly state this is a target budget rather than a guaranteed measured result.
+
+---
+
+# 23. HLD DOCUMENT
+
+Create:
+
+docs/HLD_Document.md
+
+Include:
+
+1. Executive Summary
+2. Goals and Non-Goals
+3. Architecture
+4. Architecture Diagram
+5. Latency Budget
+6. Conversation State Machine
+7. Intents and Entities
+8. Tool/API Specifications
+9. Authentication and Data Safety
+10. Compliance and Guardrails
+11. Edge Cases
+12. Escalation and Disposition
+13. Observability
+14. Failure Modes
+15. Testing Strategy
+16. Future Improvements
+
+Keep it concise but engineer-ready.
+
+---
+
+# 24. ARCHITECTURE DIAGRAM
+
+Create:
+
+docs/architecture.mmd
+
+Use Mermaid.
+
+Architecture:
+
+Customer
+↓
+Telephony
+↓
+Vapi
+├── Deepgram STT
+├── LLM / Orchestrator
+└── TTS
+↓
+Customer
+
+LLM/Orchestrator
+↓
+Mock Webhook API
+├── verify_customer
+├── log_promise_to_pay
+├── send_payment_link
+├── escalate_to_agent
+└── mark_disposition
+
+Mock API
+↓
+Mock datastore
+
+Clearly show:
+
+AUTH_PENDING
+
+and the authentication gate before debt data is accessible.
+
+---
+
+# 25. TOOL JSON SCHEMAS
+
+Create:
+
+vapi/tool_definitions.json
+
+Use valid JSON.
+
+Include all five functions:
+
+* verify_customer
+* log_promise_to_pay
+* send_payment_link
+* escalate_to_agent
+* mark_disposition
+
+Use strict required fields and enums wherever possible.
+
+---
+
+# 26. README
+
+Create a professional README.md.
+
+Include:
+
+# Kapture Finance AI Collections Voicebot
+
+## Overview
+
+## Architecture
+
+## Tech Stack
+
+## Project Structure
+
+## Local Setup
+
+Commands:
+
+npm install
+
+npm run dev
+
+Explain environment variables.
+
+## Webhook Setup
+
+Explain:
+
+localhost
+→ ngrok
+→ public HTTPS URL
+→ Vapi webhook
+
+## Vapi Configuration
+
+Explain model, STT and TTS choices.
+
+## Tools
+
+Explain each tool.
+
+## State Machine
+
+Explain authentication enforcement.
+
+## Demo Scenarios
+
+Scenario A:
+Successful PTP
+
+Scenario B:
+Already Paid
+
+Scenario C:
+DNC
+
+## Testing
+
+Explain test cases.
+
+## What Broke / Debugging
+
+Include realistic but honest placeholders where actual testing has not yet happened.
+
+DO NOT invent that a real bug was fixed if we haven't tested it.
+
+Use a section:
+
+"Observed during implementation"
+
+and leave it easy to update.
+
+## Future Improvements
+
+Examples:
+
+* persistent database
+* real payment gateway
+* production identity verification
+* call scheduling
+* Hindi evaluation
+* automated conversation testing
+* analytics dashboard
+* retry/fallback strategy
+
+---
+
+# 27. TEST CASES
+
+Create:
+
+tests/test_cases.json
+
+Include at least:
+
+TC-001 Authentication Guardrail
+TC-002 Successful PTP
+TC-003 Already Paid
+TC-004 Dispute
+TC-005 Do Not Call
+TC-006 Wrong Person
+TC-007 Verification Failure
+TC-008 Hardship
+TC-009 Hostile Caller
+TC-010 No Response
+TC-011 Hindi Language Switch
+
+For each test include:
+
+* test_id
+* category
+* input_sequence
+* expected_behavior
+* pass_criteria
+
+Most importantly:
+
+TC-001 must verify that debt information is NEVER disclosed before successful authentication.
+
+---
+
+# 28. SIMPLE DEMO DASHBOARD
+
+Create a clean React dashboard that helps demonstrate the project.
+
+The dashboard should show:
+
+* Project name
+* Agent name
+* Current mock customer
+* Account ID
+* Current state
+* Authentication status
+* Overdue amount
+* Days past due
+* Tool calls
+* Dispositions
+* PTP records
+
+Add buttons to simulate:
+
+* Verify customer
+* Successful PTP
+* Already Paid
+* Dispute
+* DNC
+* Hardship
+
+This dashboard is for development/demo purposes only.
+
+Do not expose sensitive real-world customer data.
+
+---
+
+# 29. HEALTH CHECK
+
+Implement:
+
+GET /health
+
+Return:
+
+{
+"status": "ok",
+"service": "kapture-collections-webhook"
+}
+
+---
+
+# 30. ERROR HANDLING
+
+Implement:
+
+* malformed JSON handling
+* unknown tool handling
+* missing required parameters
+* invalid account ID
+* failed verification
+* server errors
+
+Never expose internal stack traces to users.
+
+Return structured JSON errors.
+
+---
+
+# 31. LOGGING
+
+For development logs include:
+
+* timestamp
+* call/session ID
+* tool name
+* current state
+* success/failure
+
+Mask customer PII where possible.
+
+Example:
+
+Rahul S****
+
+Do not log sensitive verification values.
+
+---
+
+# 32. OBSERVABILITY METRICS
+
+Document and, where practical, expose:
+
+* total calls
+* successful PTP count
+* PTP rate
+* containment rate
+* escalation rate
+* DNC count
+* dispute count
+* already-paid count
+* verification failure rate
+* average tool latency
+* average call duration
+* no-response/drop rate
+* disposition completion rate
+
+---
+
+# 33. IMPORTANT IMPLEMENTATION RULES
+
+1. Do not hardcode authentication success inside the LLM prompt.
+2. Backend verification result is authoritative.
+3. Do not reveal debt before successful verification.
+4. Do not fabricate tool results.
+5. Do not fabricate payment confirmation.
+6. Do not invent discounts or waivers.
+7. Do not expose verification codes.
+8. Keep tools narrowly scoped.
+9. Make tool responses deterministic where possible.
+10. Keep the UI simple.
+11. Keep the code readable.
+12. Add comments only where they explain important business logic.
+13. Do not add unnecessary authentication systems, databases, Docker, Kubernetes, microservices, or complex infrastructure.
+14. This is a take-home demo, so prioritize clarity and reliability.
+
+---
+
+# 34. FINAL CHECK
+
+After implementing everything:
+
+1. Run the project.
+2. Fix syntax errors.
+3. Fix dependency errors.
+4. Test all backend endpoints.
+5. Test the webhook.
+6. Test every tool.
+7. Test the authentication state transition.
+8. Verify that debt cannot be returned before authentication.
+9. Verify DNC.
+10. Verify already-paid.
+11. Verify PTP.
+12. Verify dispute.
+13. Verify wrong person.
+14. Verify malformed requests.
+15. Verify the React app builds successfully.
+
+If something cannot be tested because Vapi credentials are unavailable, clearly document the limitation rather than pretending it works.
+
+At the end, provide:
+
+* files created
+* commands to run
+* environment variables required
+* Vapi configuration steps
+* what has been tested
+* what still requires manual Vapi testing
+
+Build the project now.

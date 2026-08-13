@@ -1,0 +1,1078 @@
+# FINAL KAPTURE COMPLETION PROMPT — CONTINUE EXISTING PROJECT
+
+We are continuing the CURRENT Kapture Finance AI Collections Voicebot project.
+
+The project already contains the main implementation and the approved Clara voice reference file.
+
+IMPORTANT:
+DO NOT rebuild the project from scratch.
+DO NOT redesign the existing dashboard.
+DO NOT remove working functionality.
+DO NOT create duplicate backends, APIs, tools, components, or state machines.
+
+Your job is to COMPLETE and VALIDATE the existing project against the original Kapture AI Delivery Intern take-home assignment.
+
+The final goal is:
+
+EXISTING REPLIT PROJECT
++
+FINAL HARDENING
++
+VAPI-READY CONFIGURATION
++
+FINAL DOCUMENTATION
++
+TESTING
+=======
+
+SUBMISSION-READY PROJECT
+
+---
+
+# 1. FIRST — INSPECT THE CURRENT PROJECT
+
+Before changing anything:
+
+1. Inspect the existing project structure.
+2. Inspect the current backend.
+3. Inspect the current state machine.
+4. Inspect the current React dashboard.
+5. Inspect the current Vapi webhook.
+6. Inspect:
+
+   * vapi/system_prompt.txt
+   * vapi/tool_definitions.json
+   * vapi/assistant_config.example.json if present
+   * docs/HLD_Document.md
+   * docs/architecture.mmd
+   * tests/test_cases.json
+7. Locate the uploaded Clara voice file:
+   `voice_preview_clara - warm, professional and helpful(1).mp3`
+8. Run the current typecheck/build/tests.
+
+DO NOT modify working parts unnecessarily.
+
+---
+
+# 2. APPROVED MAYA VOICE — CLARA
+
+The approved voice for Maya is:
+
+**Clara — Warm, Professional and Helpful**
+
+Approved reference file:
+
+`voice_preview_clara - warm, professional and helpful(1).mp3`
+
+This is the ONLY intended voice.
+
+Do NOT use:
+
+* Riya Rao
+* Rachel
+* Sarah
+* random ElevenLabs voice
+* random Cartesia voice
+* random Vapi default voice
+* any other substitute voice
+
+Preserve the uploaded Clara MP3 unchanged.
+
+The dashboard should allow the reviewer to preview/open the approved Clara reference.
+
+Clearly distinguish:
+
+**Approved Clara Voice Reference**
+
+from:
+
+**Live Vapi TTS Configuration**
+
+IMPORTANT:
+
+Do not falsely claim that the uploaded MP3 is being used as live Vapi TTS unless the actual Vapi/TTS provider supports and has been configured for it.
+
+If Vapi requires:
+
+* a voice ID
+* custom voice
+* voice cloning
+* provider-specific configuration
+
+document that requirement honestly.
+
+NEVER invent a voice ID.
+
+---
+
+# 3. ACTUAL VAPI ASSISTANT CONFIGURATION
+
+Prepare the project for a real Vapi Assistant.
+
+Recommended configuration:
+
+Assistant name:
+**Maya — Kapture Finance Collections**
+
+LLM:
+**GPT-4o-mini** or **GPT-4o**
+
+Temperature:
+**0.1**
+
+STT:
+**Deepgram Nova-2**
+
+TTS:
+**Clara / approved Clara configuration**
+
+First message:
+
+"Hello, this is Maya calling from Kapture Finance. Am I speaking with Mr. Rahul Sharma?"
+
+Do not disclose debt information in the first message.
+
+Create or update:
+
+`vapi/assistant_config.example.json`
+
+Include:
+
+* model
+* temperature
+* transcriber
+* voice
+* first message
+* system prompt reference
+* server URL placeholder
+* tools
+
+Do NOT put real API keys or secrets in the repository.
+
+Use placeholders such as:
+
+YOUR_VAPI_API_KEY
+YOUR_PUBLIC_WEBHOOK_URL
+YOUR_CLARA_VOICE_ID
+
+Do not invent actual values.
+
+---
+
+# 4. VAPI WEBHOOK
+
+Verify the existing backend supports:
+
+POST `/webhook`
+
+It must handle Vapi tool calls.
+
+Expected request:
+
+`message.type === "tool-calls"`
+
+Expected response:
+
+```json
+{
+  "results": [
+    {
+      "toolCallId": "MATCHING_TOOL_CALL_ID",
+      "result": "JSON_STRINGIFIED_RESULT"
+    }
+  ]
+}
+```
+
+The returned `toolCallId` MUST match the incoming tool call ID.
+
+Test:
+
+* valid tool call
+* unknown tool
+* invalid account
+* missing parameter
+* malformed request
+* tool failure
+
+Return structured errors.
+
+Never expose stack traces.
+
+---
+
+# 5. FIVE VAPI TOOLS
+
+Ensure these five tools are defined and compatible with Vapi:
+
+1. `verify_customer`
+2. `log_promise_to_pay`
+3. `send_payment_link`
+4. `escalate_to_agent`
+5. `mark_disposition`
+
+Do not create duplicate tools.
+
+Tool schemas must have:
+
+* clear descriptions
+* strict required parameters
+* enums where appropriate
+* correct parameter types
+
+---
+
+# 6. VERIFY_CUSTOMER — CRITICAL SECURITY TOOL
+
+Input:
+
+```json
+{
+  "account_id": "ACC-88392",
+  "verification_code": "1234"
+}
+```
+
+Success:
+
+```json
+{
+  "verified": true,
+  "customer_name": "Rahul Sharma",
+  "message": "Identity verified successfully."
+}
+```
+
+Failure:
+
+```json
+{
+  "verified": false,
+  "message": "Verification failed."
+}
+```
+
+The backend response is authoritative.
+
+The LLM must NEVER decide that the customer is authenticated by itself.
+
+Only:
+
+`verified: true`
+
+can unlock the account.
+
+Never log the raw verification code.
+
+---
+
+# 7. STATE MACHINE — MUST REMAIN BACKEND ENFORCED
+
+Use:
+
+```text
+INIT
+↓
+AUTH_PENDING
+↓
+AUTHENTICATED
+↓
+NEGOTIATION
+↓
+ACTION
+↓
+ESCALATED
+↓
+CALL_ENDED
+```
+
+The critical transition is:
+
+```text
+AUTH_PENDING
+      ↓
+verify_customer()
+      ↓
+verified: true
+      ↓
+AUTHENTICATED
+```
+
+Before AUTHENTICATED, the backend/frontend MUST NOT expose:
+
+* overdue amount
+* EMI
+* loan type
+* debt
+* ₹8,499
+* 12 days overdue
+
+Before authentication, account projection must show:
+
+Loan type: Not disclosed
+Overdue amount: —
+Days past due: —
+
+After successful authentication:
+
+Loan type: Personal Loan
+Overdue amount: ₹8,499
+Days past due: 12
+
+---
+
+# 8. TALK-PAST-AUTHENTICATION TEST
+
+This is a mandatory security test.
+
+Test this conversation:
+
+Customer:
+"Yes, I'm Rahul."
+
+Maya:
+asks verification.
+
+Customer:
+"How much do I owe?"
+
+Maya:
+MUST NOT disclose the amount.
+
+Customer:
+"Come on, just tell me."
+
+Maya:
+MUST still require verification.
+
+Only after:
+
+`verify_customer → verified: true`
+
+may Maya reveal debt information.
+
+Add this test to `tests/test_cases.json`.
+
+---
+
+# 9. MAYA SYSTEM PROMPT
+
+Review and harden:
+
+`vapi/system_prompt.txt`
+
+It must contain:
+
+* Role
+* Customer context
+* State machine
+* Authentication rules
+* Zero-debt-disclosure rule
+* Conversation flow
+* Intents
+* Entities
+* Tool usage
+* Compliance
+* Edge cases
+* Language switching
+* Closing
+
+Maya must be:
+
+* calm
+* professional
+* respectful
+* helpful
+* empathetic
+* concise
+
+Maya MUST NOT:
+
+* threaten
+* harass
+* shame
+* insult
+* argue
+* invent fees
+* invent discounts
+* invent waivers
+* invent repayment plans
+* fabricate payment confirmation
+* fabricate tool success
+* disclose debt before verification
+
+Do not make unsupported claims about:
+
+* legal action
+* credit scores
+* penalties
+* fees
+* consequences
+
+Only use trusted account/tool information.
+
+---
+
+# 10. CORE HAPPY PATH — PROMISE TO PAY
+
+Implement and test:
+
+```text
+Greeting
+↓
+Identity confirmation
+↓
+Verification
+↓
+verify_customer = true
+↓
+Debt disclosure
+↓
+Customer agrees to pay
+↓
+Extract amount + date
+↓
+log_promise_to_pay
+↓
+send_payment_link
+↓
+mark_disposition(PTP_AGREED)
+↓
+Polite closing
+```
+
+If customer says:
+
+"I'll pay Friday."
+
+Resolve the date correctly based on the current date.
+
+Do not claim payment was completed.
+
+Only confirm the payment link if the tool succeeds.
+
+---
+
+# 11. ALREADY PAID
+
+If customer says:
+
+"I already paid."
+
+Maya must not argue.
+
+Ask:
+
+"When did you make the payment, and if available, what payment method or reference did you use?"
+
+Then:
+
+`mark_disposition(ALREADY_PAID)`
+
+Close politely.
+
+Do not promise a specific processing time unless supported by backend data.
+
+---
+
+# 12. DISPUTE
+
+If customer disputes the amount/debt:
+
+Do not argue.
+
+Say:
+
+"I understand that you're disputing the amount. I'll route this for review."
+
+Then:
+
+`escalate_to_agent(reason="DISPUTE")`
+
+Then:
+
+`mark_disposition(DISPUTED)`
+
+Close.
+
+---
+
+# 13. HARDSHIP
+
+If customer cannot pay:
+
+Show empathy.
+
+Do not invent discounts, waivers, or payment plans.
+
+Capture hardship reason where appropriate.
+
+Then:
+
+`escalate_to_agent(reason="HARDSHIP_REQUEST")`
+
+and:
+
+`mark_disposition(HARDSHIP_ESCALATED)`
+
+---
+
+# 14. DO NOT CALL
+
+If customer says:
+
+"Don't call me again."
+
+"Stop calling me."
+
+"Put me on the do-not-call list."
+
+Immediately:
+
+`mark_disposition(DO_NOT_CALL)`
+
+Do NOT continue negotiation.
+
+Say:
+
+"Understood. I'll record your request. Thank you for your time."
+
+End the call.
+
+---
+
+# 15. WRONG PERSON
+
+If someone says:
+
+"This isn't Rahul."
+
+Never reveal:
+
+* loan
+* EMI
+* overdue
+* amount
+* reason for calling
+
+Ask whether Rahul is available.
+
+If unavailable:
+
+`mark_disposition(WRONG_PERSON)`
+
+End politely.
+
+---
+
+# 16. CALLBACK
+
+If customer requests a callback:
+
+Capture requested date/time if appropriate.
+
+If there is no real scheduling system:
+
+`escalate_to_agent(reason="CALLBACK_REQUEST")`
+
+and:
+
+`mark_disposition(CALLBACK_REQUEST)`
+
+Do not falsely promise that a callback has been scheduled.
+
+---
+
+# 17. HOSTILE CALLER
+
+If customer becomes abusive:
+
+Remain calm.
+
+Give one respectful warning.
+
+If hostility continues:
+
+`escalate_to_agent(reason="HOSTILE_CALLER")`
+
+then:
+
+`mark_disposition(HOSTILE_CALLER)`
+
+End safely.
+
+---
+
+# 18. NO RESPONSE / VOICEMAIL
+
+If customer does not respond:
+
+* reasonable re-prompts
+* no debt disclosure to voicemail
+* end safely
+* log `NO_RESPONSE`
+
+---
+
+# 19. ENGLISH + HINDI/HINGLISH
+
+Support language switching without losing state.
+
+Test:
+
+"Haan main Rahul bol raha hoon."
+
+"PAN number 1234 hai."
+
+"Main Friday ko pay kar dunga."
+
+Maintain:
+
+* authentication state
+* conversation state
+* account context
+* tool parameters
+
+Do not restart authentication merely because the language changes.
+
+---
+
+# 20. CALLING HOURS
+
+Document/enforce the project assumption:
+
+**08:00 AM – 07:00 PM local time**
+
+Do not initiate an outbound collections call outside this window.
+
+---
+
+# 21. LATENCY BUDGET
+
+Ensure HLD contains:
+
+Target:
+**< 1.2 seconds**
+
+Target budget:
+
+STT: ~200ms
+LLM first byte: ~400ms
+TTS: ~300ms
+Network/overhead: ~200ms
+
+Total target: ~1.1 seconds
+
+Clearly label these as target budgets, NOT measured guarantees.
+
+---
+
+# 22. HLD FINAL CHECK
+
+Review:
+
+`docs/HLD_Document.md`
+
+It must cover:
+
+1. Executive Summary
+2. Goals / Non-goals
+3. Architecture
+4. Pipeline
+5. Latency
+6. State Machine
+7. Intents
+8. Entities
+9. Tools/API
+10. Authentication/Data Safety
+11. Compliance/Guardrails
+12. Edge Cases
+13. Escalation
+14. Disposition
+15. Observability
+16. Failure Modes
+17. Testing
+18. Future Improvements
+
+Preserve existing good content.
+
+---
+
+# 23. ARCHITECTURE DIAGRAM
+
+Keep:
+
+`docs/architecture.mmd`
+
+Also create/export:
+
+`docs/System_Architecture.png`
+
+Diagram must show:
+
+Customer
+↓
+Telephony
+↓
+Vapi
+├── Deepgram STT
+├── LLM
+└── TTS
+↓
+Customer
+
+and:
+
+LLM
+↓
+Replit Webhook
+├── verify_customer
+├── log_promise_to_pay
+├── send_payment_link
+├── escalate_to_agent
+└── mark_disposition
+↓
+Mock datastore
+
+Clearly show:
+
+AUTH_PENDING
+↓
+verify_customer
+↓
+AUTHENTICATED
+↓
+Debt disclosure
+
+---
+
+# 24. HLD PDF
+
+Generate:
+
+`docs/HLD_Document.pdf`
+
+Keep:
+
+`docs/HLD_Document.md`
+
+The PDF should be professional and readable and include the architecture diagram.
+
+---
+
+# 25. TEST MATRIX
+
+Ensure:
+
+`tests/test_cases.json`
+
+contains:
+
+TC-001 Authentication Guardrail
+TC-002 Successful PTP
+TC-003 Already Paid
+TC-004 Dispute
+TC-005 Do Not Call
+TC-006 Wrong Person
+TC-007 Verification Failure
+TC-008 Hardship
+TC-009 Hostile Caller
+TC-010 No Response
+TC-011 Hindi Language Switch
+TC-012 Talk Past Authentication
+TC-013 Tool Failure
+TC-014 Invalid Account
+TC-015 Malformed Webhook
+
+Do not mark tests as passed unless they were actually executed.
+
+---
+
+# 26. TOOL FAILURE TESTING
+
+Test failures for:
+
+* verify_customer
+* log_promise_to_pay
+* send_payment_link
+* escalate_to_agent
+* mark_disposition
+
+If a tool fails, Maya MUST NOT claim success.
+
+For example:
+
+If:
+
+`send_payment_link → success:false`
+
+Maya must NOT say:
+
+"Your payment link has been sent."
+
+---
+
+# 27. OBSERVABILITY
+
+Ensure the project documents/tracks:
+
+* Total calls
+* PTP rate
+* Containment rate
+* Escalation rate
+* Verification failure rate
+* Already-paid count
+* Dispute count
+* Hardship count
+* DNC count
+* No-response count
+* Average tool latency
+* Average call duration
+* Disposition completion rate
+
+Tool logs should contain:
+
+* timestamp
+* session/call ID
+* tool name
+* state
+* success/failure
+
+Never log raw verification codes.
+
+Mask PII where practical.
+
+---
+
+# 28. DASHBOARD
+
+PRESERVE the current dashboard.
+
+Do not redesign it.
+
+Keep the existing:
+
+* Collections control room
+* Authentication state
+* Safe account projection
+* Scenario runner
+* Tool activity
+* Dispositions
+* PTP records
+* Metrics
+* Reviewer lens
+* Clara voice reference
+
+Make sure the dashboard does NOT show fake live Vapi status.
+
+Voice status should clearly say whether Clara is:
+
+* Reference only
+* Configured
+* Verified live
+
+Only use "Verified live" after an actual Vapi call confirms it.
+
+---
+
+# 29. README
+
+Update `README.md` with only necessary changes.
+
+Include:
+
+* Overview
+* Business scenario
+* Architecture
+* Tech stack
+* State machine
+* Authentication/security
+* Tools
+* Vapi configuration
+* Clara voice
+* Setup
+* Environment variables
+* Webhook setup
+* Testing
+* Demo scenarios
+* Debugging
+* Known limitations
+* Future improvements
+* Final submission checklist
+
+Do not invent debugging incidents.
+
+Only document actual issues encountered.
+
+---
+
+# 30. VAPI MANUAL SETUP GUIDE
+
+Create/update a clear document:
+
+`vapi/VAPI_SETUP_GUIDE.md`
+
+Include exact steps for the human reviewer/developer:
+
+1. Create Vapi account.
+2. Create Assistant.
+3. Configure GPT-4o-mini/GPT-4o.
+4. Configure Deepgram Nova-2.
+5. Configure approved Clara voice.
+6. Add first message.
+7. Paste final system prompt.
+8. Register all five tools.
+9. Set the Replit public webhook URL.
+10. Test the assistant.
+11. Make a PTP call.
+12. Make an Already-Paid/DNC call.
+
+Do not include real secrets.
+
+---
+
+# 31. REAL DEMO PREPARATION
+
+Prepare two exact scripts.
+
+## DEMO A — SUCCESSFUL PTP
+
+Maya:
+"Hello, this is Maya calling from Kapture Finance. Am I speaking with Mr. Rahul Sharma?"
+
+Customer:
+"Yes."
+
+Maya:
+"For security purposes, could you please confirm the last four digits of your PAN or your year of birth?"
+
+Customer:
+"1234."
+
+verify_customer → true
+
+Maya discloses:
+
+Personal Loan
+₹8,499
+12 days overdue
+
+Customer:
+"I'll pay Friday."
+
+Maya:
+confirms commitment
+
+Tool calls:
+
+1. log_promise_to_pay
+2. send_payment_link
+3. mark_disposition(PTP_AGREED)
+
+Maya closes politely.
+
+---
+
+## DEMO B — ALREADY PAID
+
+Authenticate successfully.
+
+Maya discloses the overdue information.
+
+Customer:
+"I already paid yesterday through UPI."
+
+Maya asks payment details.
+
+Call:
+
+mark_disposition(ALREADY_PAID)
+
+Maya closes politely.
+
+---
+
+# 32. FINAL BUILD CHECK
+
+Run:
+
+* typecheck
+* production build
+* API tests
+* webhook tests
+* authentication tests
+* scenario tests
+
+Fix actual failures.
+
+Do not rebuild working components.
+
+---
+
+# 33. FINAL STATUS REPORT
+
+When finished, report:
+
+## VERIFIED
+
+Only things actually tested successfully.
+
+## REQUIRES MANUAL VAPI SETUP
+
+Things requiring the Vapi dashboard/provider account.
+
+## NOT YET VERIFIED
+
+Anything that could not be tested.
+
+Also provide:
+
+* exact Vapi configuration steps
+* exact fields to fill
+* exact webhook field
+* exact tools to register
+* exact system prompt file
+* exact Clara voice configuration requirement
+* exact first-call test procedure
+* exact second-call test procedure
+
+DO NOT claim:
+
+"Vapi is working"
+
+unless a real Vapi call was actually tested.
+
+DO NOT claim:
+
+"Clara is live"
+
+unless the configured voice was actually heard in a real Vapi call.
+
+DO NOT invent:
+
+* API keys
+* voice IDs
+* webhook URLs
+* call recordings
+* test results
+
+---
+
+# FINAL RULE
+
+Use the available Replit credits only for:
+
+1. Inspecting the existing project
+2. Completing missing implementation
+3. Hardening authentication
+4. Validating tools/webhook
+5. Preparing Vapi configuration
+6. Preparing HLD PDF
+7. Preparing architecture PNG
+8. Preparing tests
+9. Updating README
+10. Preparing the final submission
+
+DO NOT waste credits redesigning the existing dashboard or rebuilding completed functionality.
+
+The project should end as a clean, honest, technically defensible Kapture Finance AI Collections Voicebot ready for final Vapi configuration and real demo calls.

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Kapture Finance Collections"
+description = "A development dashboard for Maya, an AI collections voicebot demo for Kapture Finance. It demonstrates state-enforced customer authentication, safe debt disclosure, collection intent workflows, tool calls, escalations, dispositions, and PTP records with a mock backend."
+version = "1.0.0"
+id = "artifacts/kapture-collections"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22641
+
+[services.development]
+run = "pnpm --filter @workspace/kapture-collections run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kapture-collections", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/kapture-collections/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22641"
+BASE_PATH = "/"

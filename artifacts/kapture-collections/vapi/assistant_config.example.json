@@ -1,0 +1,25 @@
+{
+  "name": "Maya — Kapture Finance Collections",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o-mini",
+    "temperature": 0.1
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-2"
+  },
+  "voice": {
+    "intendedName": "Clara",
+    "description": "Warm, professional and helpful",
+    "provider": "MANUAL_CONFIGURATION_REQUIRED",
+    "voiceId": null,
+    "referenceFile": "approved-voice/voice_preview_clara_-_warm,_professional_and_helpful_1786503064411.mp3",
+    "referencePath": "/approved-voice/voice_preview_clara_-_warm,_professional_and_helpful_1786503064411.mp3",
+    "status": "Reference only; live Vapi TTS requires manual Clara provider configuration and a real call"
+  },
+  "firstMessage": "Hello, this is Maya calling from Kapture Finance. Am I speaking with Mr. Rahul Sharma?",
+  "systemPromptFile": "vapi/system_prompt.txt",
+  "serverUrl": "https://YOUR_PUBLIC_HOST/webhook",
+  "toolsFile": "vapi/tool_definitions.json"
+}

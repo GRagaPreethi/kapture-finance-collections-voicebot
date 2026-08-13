@@ -1,0 +1,405 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: collections
+    description: Kapture Finance collections demo operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [collections]
+      summary: Get the current demo dashboard snapshot
+      responses:
+        "200":
+          description: Current dashboard state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSnapshot"
+  /demo/reset:
+    post:
+      operationId: resetDemo
+      tags: [collections]
+      summary: Reset the in-memory demo session
+      responses:
+        "200":
+          description: Reset dashboard state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSnapshot"
+  /demo/actions:
+    post:
+      operationId: runDemoAction
+      tags: [collections]
+      summary: Run a safe, preconfigured dashboard demo scenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoActionInput"
+      responses:
+        "200":
+          description: Updated dashboard state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSnapshot"
+        "400":
+          description: Invalid action or state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /account/{accountId}:
+    get:
+      operationId: getAccount
+      tags: [collections]
+      summary: Get a safe account view
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          description: Safe account view
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeAccount"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /dispositions:
+    get:
+      operationId: listDispositions
+      tags: [collections]
+      summary: List demo dispositions
+      responses:
+        "200":
+          description: Disposition records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Disposition"
+  /ptp:
+    get:
+      operationId: listPtp
+      tags: [collections]
+      summary: List promise-to-pay records
+      responses:
+        "200":
+          description: PTP records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PtpRecord"
+  /tool-calls:
+    get:
+      operationId: listToolCalls
+      tags: [collections]
+      summary: List recent tool calls
+      responses:
+        "200":
+          description: Tool call audit records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ToolCallRecord"
+  /webhook:
+    post:
+      operationId: handleWebhook
+      tags: [collections]
+      summary: Handle Vapi-compatible tool calls
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookInput"
+      responses:
+        "200":
+          description: Vapi-compatible tool results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookResponse"
+        "400":
+          description: Malformed webhook payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  parameters:
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^ACC-[0-9]{5}$"
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    SafeAccount:
+      type: object
+      properties:
+        accountId:
+          type: string
+        customerName:
+          type: string
+        loanType:
+          type: ["string", "null"]
+        overdueAmount:
+          type: ["number", "null"]
+        daysPastDue:
+          type: ["number", "null"]
+        authenticated:
+          type: boolean
+        currentState:
+          type: string
+          enum: [INIT, AUTH_PENDING, AUTHENTICATED, NEGOTIATION, ACTION, ESCALATED, CALL_ENDED]
+      required: [accountId, customerName, loanType, overdueAmount, daysPastDue, authenticated, currentState]
+    ToolCallRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        toolName:
+          type: string
+        state:
+          type: string
+        success:
+          type: boolean
+        createdAt:
+          type: string
+        summary:
+          type: string
+        latencyMs:
+          type: number
+      required: [id, toolName, state, success, createdAt, summary, latencyMs]
+    Disposition:
+      type: object
+      properties:
+        id:
+          type: string
+        accountId:
+          type: string
+        status:
+          type: string
+          enum: [PTP_AGREED, ALREADY_PAID, DISPUTED, HARDSHIP_ESCALATED, WRONG_PERSON, DO_NOT_CALL, CALLBACK_REQUEST, VERIFICATION_FAILED, NO_RESPONSE, HOSTILE_CALLER]
+        notes:
+          type: string
+        createdAt:
+          type: string
+      required: [id, accountId, status, notes, createdAt]
+    PtpRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        accountId:
+          type: string
+        date:
+          type: string
+        amount:
+          type: number
+        paymentLinkSent:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, accountId, date, amount, paymentLinkSent, createdAt]
+    DashboardMetrics:
+      type: object
+      properties:
+        totalCalls:
+          type: number
+        successfulPtp:
+          type: number
+        ptpRate:
+          type: number
+        escalations:
+          type: number
+        escalationRate:
+          type: number
+        dncCount:
+          type: number
+        alreadyPaidCount:
+          type: number
+        disputeCount:
+          type: number
+        hardshipCount:
+          type: number
+        noResponseCount:
+          type: number
+        verificationFailureRate:
+          type: number
+        containmentRate:
+          type: number
+        dispositionCompletionRate:
+          type: number
+        averageToolLatencyMs:
+          type: number
+        averageCallDurationMs:
+          type: number
+        toolSuccessRate:
+          type: number
+      required: [totalCalls, successfulPtp, ptpRate, escalations, escalationRate, dncCount, alreadyPaidCount, disputeCount, hardshipCount, noResponseCount, verificationFailureRate, containmentRate, dispositionCompletionRate, averageToolLatencyMs, averageCallDurationMs, toolSuccessRate]
+    VoiceConfiguration:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        provider:
+          type: string
+        voiceId:
+          type: ["string", "null"]
+        status:
+          type: string
+        referenceFile:
+          type: string
+      required: [name, description, provider, voiceId, status, referenceFile]
+    DashboardSnapshot:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        agentName:
+          type: string
+        companyName:
+          type: string
+        firstMessage:
+          type: string
+        account:
+          $ref: "#/components/schemas/SafeAccount"
+        currentState:
+          type: string
+          enum: [INIT, AUTH_PENDING, AUTHENTICATED, NEGOTIATION, ACTION, ESCALATED, CALL_ENDED]
+        authenticationStatus:
+          type: string
+          enum: [PENDING, VERIFIED, FAILED]
+        authAttempts:
+          type: number
+        toolCalls:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolCallRecord"
+        dispositions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Disposition"
+        ptpRecords:
+          type: array
+          items:
+            $ref: "#/components/schemas/PtpRecord"
+        metrics:
+          $ref: "#/components/schemas/DashboardMetrics"
+        voice:
+          $ref: "#/components/schemas/VoiceConfiguration"
+      required: [sessionId, agentName, companyName, firstMessage, account, currentState, authenticationStatus, authAttempts, toolCalls, dispositions, ptpRecords, metrics, voice]
+    DemoActionInput:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [VERIFY, SUCCESSFUL_PTP, ALREADY_PAID, DISPUTE, DNC, HARDSHIP, WRONG_PERSON, HOSTILE_CALLER, NO_RESPONSE]
+      required: [action]
+    WebhookToolCall:
+      type: object
+      properties:
+        id:
+          type: string
+        function:
+          type: object
+          properties:
+            name:
+              type: string
+            arguments:
+              type: object
+              additionalProperties: true
+          required: [name, arguments]
+      required: [id, function]
+    WebhookInput:
+      type: object
+      properties:
+        message:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [tool-calls]
+            call:
+              type: object
+              properties:
+                id:
+                  type: string
+              required: [id]
+            toolCalls:
+              type: array
+              items:
+                $ref: "#/components/schemas/WebhookToolCall"
+          required: [type, toolCalls]
+      required: [message]
+    WebhookResult:
+      type: object
+      properties:
+        toolCallId:
+          type: string
+        result:
+          type: string
+      required: [toolCallId, result]
+    WebhookResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebhookResult"
+      required: [results]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+      required: [error]
+

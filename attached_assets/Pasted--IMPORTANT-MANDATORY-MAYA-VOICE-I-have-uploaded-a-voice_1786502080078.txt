@@ -1,0 +1,97 @@
+# IMPORTANT — MANDATORY MAYA VOICE
+
+I have uploaded a voice preview file for the AI collections agent Maya:
+
+**Voice file:** `voice_preview_clara - warm, professional and helpful.mp3`
+
+This exact voice is the selected voice for the project.
+
+## Voice Selection Requirement
+
+Use **Clara** as the ONLY intended voice for Maya.
+
+Voice characteristics:
+
+* Female voice
+* Warm
+* Professional
+* Helpful
+* Calm
+* Respectful
+* Natural conversational delivery
+* Suitable for financial collections conversations
+
+DO NOT replace Clara with:
+
+* Riya Rao
+* Rachel
+* Sarah
+* Any random ElevenLabs voice
+* Any random Cartesia voice
+* Any default Vapi voice
+
+The uploaded Clara voice preview is the reference for the desired voice identity and tone.
+
+## Vapi Configuration
+
+Configure Maya's TTS/voice settings so that the live Vapi assistant uses the **Clara voice**, provided the selected Vapi TTS provider supports importing/using this voice.
+
+If the uploaded MP3 itself cannot technically be used directly as a Vapi real-time TTS voice, DO NOT silently substitute another voice.
+
+Instead:
+
+1. Keep the uploaded Clara MP3 as the official voice reference.
+2. Configure the Vapi TTS provider with the closest supported Clara voice/voice ID only if it genuinely corresponds to the provided Clara voice.
+3. Clearly document in README.md that the uploaded Clara MP3 is the approved voice reference.
+4. Clearly state if a voice cloning/custom voice step is required for the exact same voice.
+5. Do not claim that the exact uploaded MP3 is being used for real-time synthesis unless it has actually been configured and verified.
+6. Keep the voice configuration isolated in the Vapi configuration so it can be changed later without modifying the conversation logic.
+
+## Maya Voice Direction
+
+Maya should sound like the Clara preview:
+
+* Warm but not overly cheerful
+* Professional but not robotic
+* Helpful rather than aggressive
+* Calm when discussing overdue payments
+* Empathetic when the customer reports financial hardship
+* Firm but respectful when requesting payment
+* Never threatening
+* Never judgmental
+* Never sarcastic
+* Never overly emotional
+
+The delivery should feel like a real professional collections specialist having a respectful conversation with a customer.
+
+## Voice Configuration Documentation
+
+In the README and HLD, add:
+
+### Selected Voice
+
+**Maya Voice: Clara — Warm, Professional and Helpful**
+
+**Reference file:**
+`voice_preview_clara - warm, professional and helpful.mp3`
+
+**Reason for selection:**
+
+Clara's warm, professional and helpful tone is appropriate for a collections agent because the conversation involves sensitive financial circumstances. The voice should communicate professionalism and confidence while avoiding an aggressive or intimidating tone.
+
+Also document the actual Vapi TTS provider and voice ID used in the final implementation.
+
+## Final Verification
+
+Before considering the project complete, verify:
+
+* Maya uses the intended Clara voice configuration.
+* No Riya Rao voice is configured.
+* No random/default voice is configured.
+* The README identifies Clara as the approved voice.
+* The Vapi configuration identifies the exact TTS provider and voice ID.
+* If exact voice reproduction requires voice cloning or a provider-specific voice ID, document that limitation honestly.
+
+Do not fabricate a voice ID.
+
+If Vapi cannot directly use the uploaded MP3 as a real-time TTS voice, preserve the Clara MP3 as the approved reference and tell me exactly what manual Vapi/TTS configuration is required.

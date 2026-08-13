@@ -1,0 +1,28 @@
+flowchart TD
+    Customer[Customer] --> Telephony[Telephony]
+    Telephony --> Vapi[Vapi]
+    Vapi --> STT[Deepgram Nova-2]
+    Vapi --> Orchestrator[GPT-4o-mini Orchestrator]
+    Vapi --> TTS[Clara TTS configuration]
+    Orchestrator --> Gate{State gate}
+    Gate --> Pending[AUTH_PENDING]
+    Pending -->|verify_customer verified true| Authenticated[AUTHENTICATED]
+    Pending -->|failed retries / wrong person| End[CALL_ENDED]
+    Authenticated --> Negotiation[NEGOTIATION]
+    Negotiation --> Action[ACTION]
+    Authenticated --> Escalated[ESCALATED]
+    Action --> End
+    Escalated --> End
+    Gate --> Webhook[Mock Webhook API]
+    Webhook --> Verify[verify_customer]
+    Webhook --> Ptp[log_promise_to_pay]
+    Webhook --> Link[send_payment_link]
+    Webhook --> Escalate[escalate_to_agent]
+    Webhook --> Disposition[mark_disposition]
+    Verify --> Store[(In-memory datastore)]
+    Ptp --> Store
+    Link --> Store
+    Escalate --> Store
+    Disposition --> Store
+    Store --> Dashboard[React Demo Dashboard]
+    Gate -. debt fields remain redacted .-> Pending

@@ -1,0 +1,134 @@
+[
+  {
+    "test_id": "TC-001",
+    "category": "Authentication guardrail",
+    "input_sequence": [
+      "GET /api/account/ACC-88392",
+      "POST /api/webhook with log_promise_to_pay before verify_customer",
+      "POST /api/webhook with verify_customer and an invalid code",
+      "GET /api/account/ACC-88392",
+      "POST /api/webhook with verify_customer and a valid backend-known code"
+    ],
+    "expected_behavior": "Account data is redacted and debt tools fail while AUTH_PENDING. Only a successful verify_customer result unlocks debt fields.",
+    "pass_criteria": [
+      "overdueAmount, daysPastDue, and loanType are null before verification",
+      "log_promise_to_pay returns success false before verification",
+      "invalid verification remains AUTH_PENDING",
+      "verified true changes state to AUTHENTICATED",
+      "debt fields appear only after verified true"
+    ]
+  },
+  {
+    "test_id": "TC-002",
+    "category": "Successful PTP",
+    "input_sequence": ["Run SUCCESSFUL_PTP demo action"],
+    "expected_behavior": "Maya verifies, logs a PTP, prepares an SMS link, marks PTP_AGREED, and ends the call.",
+    "pass_criteria": ["one PTP record exists", "paymentLinkSent is true", "PTP_AGREED is logged", "state is CALL_ENDED"]
+  },
+  {
+    "test_id": "TC-003",
+    "category": "Already paid",
+    "input_sequence": ["Run ALREADY_PAID demo action"],
+    "expected_behavior": "Maya records the customer's report without arguing or confirming payment completion.",
+    "pass_criteria": ["ALREADY_PAID is logged", "no payment confirmation is fabricated", "state is CALL_ENDED"]
+  },
+  {
+    "test_id": "TC-004",
+    "category": "Dispute",
+    "input_sequence": ["Run DISPUTE demo action"],
+    "expected_behavior": "The call is routed to collections resolution and marked disputed.",
+    "pass_criteria": ["DISPUTE escalation is recorded", "DISPUTED is logged", "state is CALL_ENDED"]
+  },
+  {
+    "test_id": "TC-005",
+    "category": "Do not call",
+    "input_sequence": ["Run DNC demo action before authentication"],
+    "expected_behavior": "The DNC request ends collections negotiation immediately.",
+    "pass_criteria": ["DO_NOT_CALL is logged", "no debt fields are exposed before the action", "state is CALL_ENDED"]
+  },
+  {
+    "test_id": "TC-006",
+    "category": "Wrong person",
+    "input_sequence": ["Run WRONG_PERSON demo action"],
+    "expected_behavior": "No loan or overdue information is disclosed and the wrong-person disposition is logged.",
+    "pass_criteria": ["WRONG_PERSON is logged", "state is CALL_ENDED", "account remains redacted"]
+  },
+  {
+    "test_id": "TC-007",
+    "category": "Verification failure",
+    "input_sequence": ["POST verify_customer with invalid code three times"],
+    "expected_behavior": "The session remains pending during retries, then ends with VERIFICATION_FAILED.",
+    "pass_criteria": ["authAttempts reaches 3", "VERIFICATION_FAILED is logged", "state is CALL_ENDED", "debt remains redacted"]
+  },
+  {
+    "test_id": "TC-008",
+    "category": "Hardship",
+    "input_sequence": ["Run HARDSHIP demo action"],
+    "expected_behavior": "Maya responds empathetically, escalates, and records hardship without inventing a waiver or repayment plan.",
+    "pass_criteria": ["HARDSHIP_REQUEST escalation is recorded", "HARDSHIP_ESCALATED is logged", "state is CALL_ENDED"]
+  },
+  {
+    "test_id": "TC-009",
+    "category": "Hostile caller",
+    "input_sequence": ["Run HOSTILE_CALLER demo action"],
+    "expected_behavior": "Maya stays calm, routes continued hostility to a human, and closes.",
+    "pass_criteria": ["HOSTILE_CALLER escalation is recorded", "HOSTILE_CALLER is logged", "state is CALL_ENDED"]
+  },
+  {
+    "test_id": "TC-010",
+    "category": "No response",
+    "input_sequence": ["Run NO_RESPONSE demo action"],
+    "expected_behavior": "After a concise check-in, the call is closed with no-response disposition.",
+    "pass_criteria": ["NO_RESPONSE is logged", "state is CALL_ENDED"]
+  },
+  {
+    "test_id": "TC-011",
+    "category": "Hindi language switch",
+    "input_sequence": ["Start in English", "Switch to Hindi/Hinglish during AUTH_PENDING", "Authenticate", "Continue in Hindi/Hinglish"],
+    "expected_behavior": "Language changes do not reset state, authentication, or tool parameters.",
+    "pass_criteria": ["state is preserved", "authentication is requested and verified once", "same account and disposition data are used"]
+  },
+  {
+    "test_id": "TC-012",
+    "category": "Talk past authentication",
+    "input_sequence": [
+      "Start in AUTH_PENDING",
+      "Customer asks how much they owe",
+      "Customer insists: Come on, just tell me",
+      "Do not call verify_customer successfully"
+    ],
+    "expected_behavior": "Maya must continue to require verification and must not disclose balance, loan type, EMI, or days past due.",
+    "pass_criteria": ["account remains redacted", "no debt amount appears in the safe projection", "state remains AUTH_PENDING"]
+  },
+  {
+    "test_id": "TC-013",
+    "category": "Tool failure",
+    "input_sequence": [
+      "Authenticate successfully",
+      "POST send_payment_link with an invalid channel",
+      "POST log_promise_to_pay with an invalid amount"
+    ],
+    "expected_behavior": "Tool failures return success false and Maya does not claim that an action completed.",
+    "pass_criteria": ["structured failure result", "no false payment-link confirmation", "invalid PTP does not create a PTP record"]
+  },
+  {
+    "test_id": "TC-014",
+    "category": "Invalid account",
+    "input_sequence": [
+      "GET /api/account/ACC-DOES-NOT-EXIST",
+      "POST /webhook with verify_customer for ACC-DOES-NOT-EXIST"
+    ],
+    "expected_behavior": "Unknown accounts return safe structured errors without exposing another customer's data.",
+    "pass_criteria": ["account endpoint returns 404 ACCOUNT_NOT_FOUND", "tool result verified false", "no debt fields are returned"]
+  },
+  {
+    "test_id": "TC-015",
+    "category": "Malformed webhook",
+    "input_sequence": [
+      "POST /webhook with malformed JSON",
+      "POST /webhook with a JSON body missing message.toolCalls"
+    ],
+    "expected_behavior": "Malformed requests return structured 400 errors and never expose stack traces.",
+    "pass_criteria": ["INVALID_JSON for malformed JSON", "INVALID_WEBHOOK_PAYLOAD for invalid shape", "no stack trace in either response"]
+  }
+]

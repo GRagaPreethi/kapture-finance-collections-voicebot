@@ -1,0 +1,22 @@
+Kapture Finance AI Collections Voicebot
+Final submission archive
+
+Included:
+- React/Vite Collections Control Room source and public assets
+- Express API server source and built output
+- Shared OpenAPI specification, generated React client, generated Zod validators, and database package source
+- HLD_Document.md and HLD_Document.pdf
+- architecture.mmd, architecture.svg, and System_Architecture.png
+- Vapi system prompt, strict tool definitions, assistant example, and VAPI_SETUP_GUIDE.md
+- TC-001 through TC-015 test matrix and executable API regression script
+- Approved Clara voice asset in artifacts/kapture-collections/public/approved-voice/
+- Original uploaded Clara voice asset and completion prompt files in attached_assets/
+- Workspace manifests and Replit artifact configuration
+
+Excluded intentionally:
+- node_modules dependency installations
+- VCS metadata
+- Replit/editor caches
+- TypeScript incremental build caches and runtime logs
+
+The source project remains unchanged; this manifest exists only inside the ZIP.

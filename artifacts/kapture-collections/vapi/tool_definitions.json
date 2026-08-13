@@ -1,0 +1,112 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "verify_customer",
+      "description": "Verify the customer before any debt information can be disclosed.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["account_id", "verification_code"],
+        "properties": {
+          "account_id": { "type": "string", "pattern": "^ACC-[0-9]{5}$" },
+          "verification_code": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "log_promise_to_pay",
+      "description": "Record a customer promise to pay after authentication.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["account_id", "ptp_date", "amount"],
+        "properties": {
+          "account_id": { "type": "string", "pattern": "^ACC-[0-9]{5}$" },
+          "ptp_date": { "type": "string", "format": "date" },
+          "amount": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "send_payment_link",
+      "description": "Prepare a payment link for an authenticated customer.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["account_id", "channel"],
+        "properties": {
+          "account_id": { "type": "string", "pattern": "^ACC-[0-9]{5}$" },
+          "channel": { "type": "string", "enum": ["SMS", "WhatsApp", "BOTH"] }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "escalate_to_agent",
+      "description": "Route a sensitive or unresolved call to a human collections agent.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["account_id", "reason"],
+        "properties": {
+          "account_id": { "type": "string", "pattern": "^ACC-[0-9]{5}$" },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "DISPUTE",
+              "HARDSHIP_REQUEST",
+              "CALLBACK_REQUEST",
+              "HOSTILE_CALLER",
+              "VERIFICATION_FAILURE"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mark_disposition",
+      "description": "Log the final outcome of the current collections call.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["account_id", "status", "notes"],
+        "properties": {
+          "account_id": { "type": "string", "pattern": "^ACC-[0-9]{5}$" },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PTP_AGREED",
+              "ALREADY_PAID",
+              "DISPUTED",
+              "HARDSHIP_ESCALATED",
+              "WRONG_PERSON",
+              "DO_NOT_CALL",
+              "CALLBACK_REQUEST",
+              "VERIFICATION_FAILED",
+              "NO_RESPONSE",
+              "HOSTILE_CALLER"
+            ]
+          },
+          "notes": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+]
