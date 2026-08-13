@@ -310,7 +310,7 @@ function verifyCustomer(accountId: unknown, verificationCode: unknown) {
 
 const normalizedVerificationCode = String(
   verificationCode ?? "",
-).trim();
+).replace(/\D/g, "");
 
 const verified =
   account.verificationCodes.includes(normalizedVerificationCode);
