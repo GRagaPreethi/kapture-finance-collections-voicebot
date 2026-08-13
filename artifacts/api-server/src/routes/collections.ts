@@ -307,9 +307,13 @@ function verifyCustomer(accountId: unknown, verificationCode: unknown) {
   }
 
   session.authAttempts += 1;
-  const verified =
-    typeof verificationCode === "string" &&
-    account.verificationCodes.includes(verificationCode);
+
+const normalizedVerificationCode = String(
+  verificationCode ?? "",
+).trim();
+
+const verified =
+  account.verificationCodes.includes(normalizedVerificationCode);
 
   if (verified) {
     session.authenticationStatus = "VERIFIED";
