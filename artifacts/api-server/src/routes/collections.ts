@@ -93,7 +93,7 @@ const account: AccountRecord = {
   loanType: "Personal Loan",
   overdueAmount: 8499,
   daysPastDue: 12,
-  verificationCodes: ["1234", "1995"],
+  verificationCodes: ["2913", "2005"],
   phone: "+91XXXXXXXXXX",
 };
 
@@ -231,7 +231,7 @@ export function snapshot() {
     ptpRecords: [...session.ptpRecords].reverse(),
     metrics: metrics(),
     voice: {
-      name: "Clara",
+      name: "Maya",
       description: "Warm, professional and helpful",
       provider: "Not connected — reference only",
       voiceId: null,
