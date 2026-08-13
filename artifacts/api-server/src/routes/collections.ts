@@ -1,4 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import { AsyncLocalStorage } from "node:async_hooks";
 import {
   GetAccountParams,
   HandleWebhookBody,
@@ -89,7 +90,7 @@ type DemoSession = {
 
 const account: AccountRecord = {
   accountId: "ACC-88392",
-  customerName: "Rahul Sharma",
+  customerName: "Preethi",
   loanType: "Personal Loan",
   overdueAmount: 8499,
   daysPastDue: 12,
@@ -102,7 +103,13 @@ const FIRST_MESSAGE =
 const VOICE_REFERENCE =
   "/approved-voice/voice_preview_clara_-_warm,_professional_and_helpful_1786503064411.mp3";
 
-let session: DemoSession = createSession();
+const sessionStorage = new AsyncLocalStorage<DemoSession>();
+const sessions = new Map<string, DemoSession>();
+let demoSession: DemoSession = createSession();
+
+function getSession(): DemoSession {
+  return sessionStorage.getStore() ?? demoSession;
+}
 
 function createSession(): DemoSession {
   return {
@@ -122,12 +129,12 @@ function now(): string {
 }
 
 function nextId(prefix: string): string {
-  session.sequence += 1;
+  getSession.sequence += 1;
   return `${prefix}-${String(session.sequence).padStart(4, "0")}`;
 }
 
 function safeAccount() {
-  const authenticated = session.authenticationStatus === "VERIFIED";
+  const authenticated = getSession.authenticationStatus === "VERIFIED";
   return {
     accountId: account.accountId,
     customerName: account.customerName,
@@ -135,7 +142,7 @@ function safeAccount() {
     overdueAmount: authenticated ? account.overdueAmount : null,
     daysPastDue: authenticated ? account.daysPastDue : null,
     authenticated,
-    currentState: session.currentState,
+    currentState: getSession.currentState,
   };
 }
 
