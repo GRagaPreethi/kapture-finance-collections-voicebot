@@ -286,9 +286,11 @@ function isAuthenticated(): boolean {
 }
 
 function accountMismatch(accountId: unknown): boolean {
-  return accountId !== account.accountId;
+  return accountId !== undefined &&
+    accountId !== null &&
+    accountId !== "" &&
+    accountId !== account.accountId;
 }
-
 function verifyCustomer(accountId: unknown, verificationCode: unknown) {
   if (accountMismatch(accountId)) {
     recordTool("verify_customer", false, "Account was not found.");
