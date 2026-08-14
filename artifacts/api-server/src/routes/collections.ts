@@ -111,9 +111,18 @@ function getSession(): DemoSession {
   return sessionStorage.getStore() ?? demoSession;
 }
 
-function createSession(): DemoSession {
+function getOrCreateCallSession(callId: string): DemoSession {
+  let callSession = sessions.get(callId);
+  if (!callSession) {
+    callSession = createSession(callId);
+    sessions.set(callId, callSession);
+  }
+  return callSession;
+}
+
+function createSession(sessionId = "MAYA-DEMO-001"): DemoSession {
   return {
-    sessionId: "MAYA-DEMO-001",
+    sessionId,
     currentState: "AUTH_PENDING",
     authenticationStatus: "PENDING",
     authAttempts: 0,
@@ -129,8 +138,8 @@ function now(): string {
 }
 
 function nextId(prefix: string): string {
-  getSession.sequence += 1;
-  return `${prefix}-${String(session.sequence).padStart(4, "0")}`;
+  getSession().sequence += 1;
+  return `${prefix}-${String(getSession().sequence).padStart(4, "0")}`;
 }
 
 function safeAccount() {
@@ -147,32 +156,32 @@ function safeAccount() {
 }
 
 function metrics() {
-  const successfulToolCalls = session.toolCalls.filter((call) => call.success).length;
-  const dispositionCount = session.dispositions.length;
-  const ptpCount = session.dispositions.filter(
+  const successfulToolCalls = getSession().toolCalls.filter((call) => call.success).length;
+  const dispositionCount = getSession().dispositions.length;
+  const ptpCount = getSession().dispositions.filter(
     (disposition) => disposition.status === "PTP_AGREED",
   ).length;
-  const alreadyPaidCount = session.dispositions.filter(
+  const alreadyPaidCount = getSession().dispositions.filter(
     (disposition) => disposition.status === "ALREADY_PAID",
   ).length;
-  const disputeCount = session.dispositions.filter(
+  const disputeCount = getSession().dispositions.filter(
     (disposition) => disposition.status === "DISPUTED",
   ).length;
-  const hardshipCount = session.dispositions.filter(
+  const hardshipCount = getSession().dispositions.filter(
     (disposition) => disposition.status === "HARDSHIP_ESCALATED",
   ).length;
-  const noResponseCount = session.dispositions.filter(
+  const noResponseCount = getSession().dispositions.filter(
     (disposition) => disposition.status === "NO_RESPONSE",
   ).length;
-  const verificationFailureCount = session.toolCalls.filter(
+  const verificationFailureCount = getSession().toolCalls.filter(
     (call) => call.toolName === "verify_customer" && !call.success,
   ).length;
-  const escalationCount = session.dispositions.filter((disposition) =>
+  const escalationCount = getSession().dispositions.filter((disposition) =>
     ["DISPUTED", "HARDSHIP_ESCALATED", "CALLBACK_REQUEST", "HOSTILE_CALLER"].includes(
       disposition.status,
     ),
   ).length;
-  const dncCount = session.dispositions.filter(
+  const dncCount = getSession().dispositions.filter(
     (disposition) => disposition.status === "DO_NOT_CALL",
   ).length;
 
@@ -194,9 +203,9 @@ function metrics() {
     hardshipCount,
     noResponseCount,
     verificationFailureRate:
-      session.authAttempts === 0
+      getSession().authAttempts === 0
         ? 0
-        : Math.round((verificationFailureCount / session.authAttempts) * 100),
+        : Math.round((verificationFailureCount / getSession().authAttempts) * 100),
     containmentRate:
       dispositionCount === 0
         ? 0
@@ -205,17 +214,17 @@ function metrics() {
           ),
     dispositionCompletionRate: dispositionCount > 0 ? 100 : 0,
     averageToolLatencyMs:
-      session.toolCalls.length === 0
+      getSession().toolCalls.length === 0
         ? 0
         : Math.round(
-            session.toolCalls.reduce((total, call) => total + call.latencyMs, 0) /
-              session.toolCalls.length,
+            getSession().toolCalls.reduce((total, call) => total + call.latencyMs, 0) /
+              getSession().toolCalls.length,
           ),
     averageCallDurationMs: 0,
     toolSuccessRate:
-      session.toolCalls.length === 0
+      getSession().toolCalls.length === 0
         ? 100
-        : Math.round((successfulToolCalls / session.toolCalls.length) * 100),
+        : Math.round((successfulToolCalls / getSession().toolCalls.length) * 100),
   };
 }
 
@@ -225,17 +234,17 @@ function metricsTotalCalls(): number {
 
 export function snapshot() {
   return {
-    sessionId: session.sessionId,
+    sessionId: getSession().sessionId,
     agentName: "Maya",
     companyName: "Kapture Finance",
     firstMessage: FIRST_MESSAGE,
     account: safeAccount(),
-    currentState: session.currentState,
-    authenticationStatus: session.authenticationStatus,
-    authAttempts: session.authAttempts,
-    toolCalls: [...session.toolCalls].reverse(),
-    dispositions: [...session.dispositions].reverse(),
-    ptpRecords: [...session.ptpRecords].reverse(),
+    currentState: getSession().currentState,
+    authenticationStatus: getSession().authenticationStatus,
+    authAttempts: getSession().authAttempts,
+    toolCalls: [...getSession().toolCalls].reverse(),
+    dispositions: [...getSession().dispositions].reverse(),
+    ptpRecords: [...getSession().ptpRecords].reverse(),
     metrics: metrics(),
     voice: {
       name: "Maya",
@@ -252,7 +261,7 @@ function recordTool(
   toolName: string,
   success: boolean,
   summary: string,
-  state = session.currentState,
+  state = getSession().currentState,
 ): ToolCallRecord {
   const record: ToolCallRecord = {
     id: nextId("TOOL"),
@@ -263,10 +272,10 @@ function recordTool(
     latencyMs: 0,
     summary,
   };
-  session.toolCalls.push(record);
+  getSession().toolCalls.push(record);
   logger.info(
     {
-      sessionId: session.sessionId,
+      sessionId: getSession().sessionId,
       toolName,
       state,
       success,
@@ -284,12 +293,12 @@ function createDisposition(status: DispositionStatus, notes: string) {
     notes,
     createdAt: now(),
   };
-  session.dispositions.push(record);
+  getSession().dispositions.push(record);
   return record;
 }
 
 function isAuthenticated(): boolean {
-  return session.authenticationStatus === "VERIFIED";
+  return getSession().authenticationStatus === "VERIFIED";
 }
 
 function accountMismatch(accountId: unknown): boolean {
@@ -304,7 +313,20 @@ function verifyCustomer(accountId: unknown, verificationCode: unknown) {
     return { verified: false, message: "Verification failed." };
   }
 
-  if (session.currentState !== "AUTH_PENDING") {
+  if (getSession().authenticationStatus === "VERIFIED") {
+    recordTool(
+      "verify_customer",
+      true,
+      "Customer is already verified for this call.",
+    );
+    return {
+      verified: true,
+      customer_name: account.customerName,
+      message: "Identity is already verified for this call.",
+    };
+  }
+
+  if (getSession().currentState !== "AUTH_PENDING") {
     recordTool(
       "verify_customer",
       false,
@@ -313,7 +335,7 @@ function verifyCustomer(accountId: unknown, verificationCode: unknown) {
     return { verified: false, message: "Verification is not available in the current state." };
   }
 
-  session.authAttempts += 1;
+  getSession().authAttempts += 1;
 
 const normalizedVerificationCode = String(
   verificationCode ?? "",
@@ -323,8 +345,8 @@ const verified =
   account.verificationCodes.includes(normalizedVerificationCode);
 
   if (verified) {
-    session.authenticationStatus = "VERIFIED";
-    session.currentState = "AUTHENTICATED";
+    getSession().authenticationStatus = "VERIFIED";
+    getSession().currentState = "AUTHENTICATED";
     recordTool("verify_customer", true, "Identity verified; debt disclosure gate opened.");
     return {
       verified: true,
@@ -333,9 +355,9 @@ const verified =
     };
   }
 
-  if (session.authAttempts >= 3) {
-    session.authenticationStatus = "FAILED";
-    session.currentState = "CALL_ENDED";
+  if (getSession().authAttempts >= 3) {
+    getSession().authenticationStatus = "FAILED";
+    getSession().currentState = "CALL_ENDED";
     createDisposition(
       "VERIFICATION_FAILED",
       "Authentication failed after the allowed retry window.",
@@ -416,7 +438,7 @@ function logPromiseToPay(args: Record<string, unknown>) {
     };
   }
 
-  session.currentState = "NEGOTIATION";
+  getSession().currentState = "NEGOTIATION";
 
   const ptp = {
     id: nextId("PTP"),
@@ -427,9 +449,9 @@ function logPromiseToPay(args: Record<string, unknown>) {
     createdAt: now(),
   };
 
-  session.ptpRecords.push(ptp);
+  getSession().ptpRecords.push(ptp);
 
-  session.currentState = "ACTION";
+  getSession().currentState = "ACTION";
 
   recordTool(
     "log_promise_to_pay",
@@ -488,7 +510,7 @@ function escalateToAgent(args: Record<string, unknown>) {
     return { success: false, message: "Invalid escalation reason." };
   }
 
-  session.currentState = "ESCALATED";
+  getSession().currentState = "ESCALATED";
   recordTool("escalate_to_agent", true, `Routed to collections resolution: ${reason}.`);
   return {
     success: true,
@@ -537,8 +559,8 @@ function markDisposition(args: Record<string, unknown>) {
       ? args.notes.trim()
       : "Disposition recorded by Maya.";
   createDisposition(status, notes);
-  session.currentState = "CALL_ENDED";
-  if (status === "VERIFICATION_FAILED") session.authenticationStatus = "FAILED";
+  getSession().currentState = "CALL_ENDED";
+  if (status === "VERIFICATION_FAILED") getSession().authenticationStatus = "FAILED";
   recordTool("mark_disposition", true, `${status} disposition logged.`);
   return { success: true, disposition_logged: true };
 }
@@ -672,7 +694,7 @@ function runDemoAction(action: DemoAction) {
       executeTool("mark_disposition", {
         account_id: account.accountId,
         status: "WRONG_PERSON",
-        notes: "The person reached was not Rahul Sharma.",
+        notes: "The person reached was not the intended customer.",
       });
       break;
     case "HOSTILE_CALLER":
@@ -708,13 +730,28 @@ export function handleWebhookRequest(req: Request, res: Response) {
   }
 
   const message = parsed.data.message;
-  const results = message.toolCalls.map((toolCall) => ({
-    toolCallId: toolCall.id,
-    result: JSON.stringify(
-      executeTool(toolCall.function.name, toolCall.function.arguments),
-    ),
-  }));
-  res.json({ results });
+  const callId = message.call?.id;
+
+  if (!callId) {
+    res.status(400).json({
+      error: "Missing Vapi call ID.",
+      code: "MISSING_CALL_ID",
+    });
+    return;
+  }
+
+  const callSession = getOrCreateCallSession(callId);
+
+  sessionStorage.run(callSession, () => {
+    const results = message.toolCalls.map((toolCall) => ({
+      toolCallId: toolCall.id,
+      result: JSON.stringify(
+        executeTool(toolCall.function.name, toolCall.function.arguments),
+      ),
+    }));
+
+    res.json({ results });
+  });
 }
 
 const router: IRouter = Router();
@@ -724,7 +761,7 @@ router.get("/dashboard", (_req, res) => {
 });
 
 router.post("/demo/reset", (_req, res) => {
-  session = createSession();
+  demoSession = createSession();
   res.json(snapshot());
 });
 
@@ -750,15 +787,15 @@ router.get("/account/:accountId", (req, res) => {
 });
 
 router.get("/dispositions", (_req, res) => {
-  res.json([...session.dispositions].reverse());
+  res.json([...getSession().dispositions].reverse());
 });
 
 router.get("/ptp", (_req, res) => {
-  res.json([...session.ptpRecords].reverse());
+  res.json([...getSession().ptpRecords].reverse());
 });
 
 router.get("/tool-calls", (_req, res) => {
-  res.json([...session.toolCalls].reverse());
+  res.json([...getSession().toolCalls].reverse());
 });
 
 router.post("/webhook", handleWebhookRequest);
