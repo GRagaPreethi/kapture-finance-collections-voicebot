@@ -326,7 +326,25 @@ export default function ControlRoom() {
   };
 
   const handleWebhook = () => {
-    const payload: WebhookInput = { message: { type: 'tool-calls', toolCalls: [{ id: 'reviewer-check-1', function: { name: 'get_account', arguments: { accountId: accountId || 'demo' } } }] } };
+    const payload: WebhookInput = {
+  message: {
+    type: 'tool-calls',
+    call: {
+      id: 'reviewer-check-call-1',
+    },
+    toolCalls: [
+      {
+        id: 'reviewer-check-1',
+        function: {
+          name: 'get_account',
+          arguments: {
+            accountId: accountId || 'demo',
+          },
+        },
+      },
+    ],
+  },
+};
     setWebhookResult('');
     webhook.mutate({ data: payload }, { onSuccess: (result) => setWebhookResult(result.results[0]?.result ?? 'Tool call acknowledged.'), onError: () => setWebhookResult('Webhook rejected. Check the tool contract and try again.') });
   };
