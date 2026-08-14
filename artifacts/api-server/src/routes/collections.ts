@@ -586,24 +586,65 @@ export function executeTool(
   rawArgs: unknown,
 ): Record<string, unknown> {
   const args = parseToolArguments(rawArgs);
- switch (toolName) {
+switch (toolName) {
+  case "get_account":
+    if (accountMismatch(args.accountId ?? args.account_id)) {
+      recordTool("get_account", false, "Account was not found.");
+      return {
+        success: false,
+        message: "Account was not found.",
+      };
+    }
+
+    if (!isAuthenticated()) {
+      recordTool(
+        "get_account",
+        false,
+        "Account details are protected until verification.",
+      );
+      return {
+        success: false,
+        message: "Customer authentication is required.",
+      };
+    }
+
+    recordTool(
+      "get_account",
+      true,
+      "Authenticated account details retrieved.",
+    );
+
+    return {
+      success: true,
+      account_id: account.accountId,
+      customer_name: account.customerName,
+      loan_type: account.loanType,
+      overdue_amount: account.overdueAmount,
+      days_past_due: account.daysPastDue,
+    };
+
   case "verify_customer":
     return verifyCustomer(
       account.accountId,
       args.verification_code,
     );
-    case "log_promise_to_pay":
-      return logPromiseToPay(args);
-    case "send_payment_link":
-      return sendPaymentLink(args);
-    case "escalate_to_agent":
-      return escalateToAgent(args);
-    case "mark_disposition":
-      return markDisposition(args);
-    default:
-      recordTool(toolName, false, "Unknown tool requested.");
-      return { success: false, error: "Unknown tool." };
-  }
+
+  case "log_promise_to_pay":
+    return logPromiseToPay(args);
+
+  case "send_payment_link":
+    return sendPaymentLink(args);
+
+  case "escalate_to_agent":
+    return escalateToAgent(args);
+
+  case "mark_disposition":
+    return markDisposition(args);
+
+  default:
+    recordTool(toolName, false, "Unknown tool requested.");
+    return { success: false, error: "Unknown tool." };
+}
 }
 
 function runDemoAction(action: DemoAction) {
