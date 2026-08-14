@@ -193,7 +193,7 @@ function ConversationState({ snapshot }: { snapshot: DashboardSnapshot }) {
   const activeIndex = Math.max(stateSteps.findIndex((step) => step.key === snapshot.currentState), 0);
   return (
     <section className="rounded-xl border border-border bg-card p-5 shadow-[0_2px_12px_hsl(222_31%_18%/.025)] sm:p-6">
-      <SectionHeading eyebrow="01 / live trace" title="Conversation state" action={<StatusPill tone={snapshot.authenticationStatus === 'VERIFIED' ? 'teal' : snapshot.authenticationStatus === 'FAILED' ? 'rose' : 'gold'}><span className="h-1.5 w-1.5 rounded-full bg-current" /> {(snapshot.currentState ?? 'AUTH_PENDING').replace('_', ' ')} />
+      <SectionHeading eyebrow="01 / live trace" title="Conversation state" action={<StatusPill tone={snapshot.authenticationStatus === 'VERIFIED' ? 'teal' : snapshot.authenticationStatus === 'FAILED' ? 'rose' : 'gold'}><span className="h-1.5 w-1.5 rounded-full bg-current" /> {(snapshot.currentState ?? 'AUTH_PENDING').replace('_', ' ')}</StatusPill>} />
       <div className="relative mt-7">
         <div className="absolute left-[13px] top-3 h-[calc(100%-24px)] w-px bg-border" />
         <div className="space-y-5">
@@ -222,7 +222,14 @@ function AccountCard({ snapshot, account }: { snapshot: DashboardSnapshot; accou
     <SectionHeading eyebrow="02 / safe account view" title="Account context" action={<StatusPill tone={safeAccount.authenticated ? 'teal' : 'gold'}>{safeAccount.authenticated ? <BadgeCheck size={12} /> : <KeyRound size={12} />} {safeAccount.authenticated ? 'Verified' : 'Pending'}</StatusPill>} />
     <div className="flex items-center gap-3 border-b border-border pb-5">
       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[hsl(35_78%_56%/.2)] font-serif text-lg text-[hsl(28_55%_31%)]">{safeAccount.customerName.split(' ').map((part) => part[0]).join('').slice(0, 2)}</div>
-      <div><div data-testid="text-customer-name" className="font-semibold">{safeAccount.customerName}</div><div data-testid="text-account-id" className="mt-0.5 font-mono text-[10px] text-muted-foreground">{safeAccount.accountId}</div></div>
+      <div>
+  <div data-testid="text-customer-name" className="font-semibold">
+    {safeAccount.customerName}
+  </div>
+  <div data-testid="text-account-id" className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+    {safeAccount.accountId}
+  </div>
+</div>
       <div className="ml-auto text-right"><div className="font-mono text-[9px] uppercase tracking-[.1em] text-muted-foreground">State</div><div data-testid="status-account-state" className="mt-1 text-[11px] font-semibold">{(safeAccount.currentState ?? 'AUTH_PENDING').replace('_', ' ')}</div></div>
     </div>
     <div className="grid grid-cols-2 gap-x-5 gap-y-4 pt-5">
